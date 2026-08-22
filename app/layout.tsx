@@ -43,6 +43,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="ko_KR" />
+        <meta property="og:url" content={siteUrl} />
+        <meta property="og:title" content="CT검사 가이드 | SMC" />
+        <meta
+          property="og:description"
+          content="CT검사 전 과정을 이해하고 준비할 수 있도록 안내해드립니다."
+        />
+        <meta property="og:site_name" content="SMC CT검사 안내" />
+        <meta property="og:image" content={previewImage} />
+        <meta property="og:image:width" content="1231" />
+        <meta property="og:image:height" content="927" />
+        <meta property="og:image:alt" content="CT 검사 장비" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={previewImage} />
+      </head>
       <body>{children}</body>
     </html>
   );

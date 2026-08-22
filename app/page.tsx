@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
-const guideSections = [
-  "가이드",
-  "CT검사란?",
-  "검사순서",
-  "탈의안내",
-  "검사준비",
-  "CT검사",
-  "주의사항",
+const mainGuideSections = [
+  { label: "CT검사란?", step: 2 },
+  { label: "검사순서", step: 3 },
+  { label: "주의사항", step: 7 },
+] as const;
+
+const examSubSections = [
+  { label: "탈의안내", step: 4 },
+  { label: "검사준비", step: 5 },
+  { label: "CT검사", step: 6 },
 ] as const;
 
 const introLine1 = "CT검사의 전 과정을 이해하고 준비할 수 있도록";
@@ -20,10 +22,11 @@ const introMessage = `${introLine1} ${introLine2}`;
 const introTypingText = `${introLine1}${introLine2}`;
 
 function Header({ step, onNavigate }: { step: Step; onNavigate: (step: Step) => void }) {
-  const toolbarRef = useRef<HTMLElement>(null);
+  const subToolbarRef = useRef<HTMLElement>(null);
+  const isExamProcess = step >= 3 && step <= 6;
 
   useEffect(() => {
-    const activeItem = toolbarRef.current?.querySelector<HTMLElement>(".progress-item.active");
+    const activeItem = subToolbarRef.current?.querySelector<HTMLElement>(".sub-progress-item.active");
     if (!activeItem) return;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -35,32 +38,57 @@ function Header({ step, onNavigate }: { step: Step; onNavigate: (step: Step) => 
   }, [step]);
 
   return (
-    <header className="site-header">
-      <img className="smc-logo" src="/smc-logo.png?v=2" alt="SMC 삼성서울병원" />
-      <nav ref={toolbarRef} className="progress-toolbar" aria-label="CT검사 가이드 순서">
+    <header className={`site-header${isExamProcess ? " has-subtoolbar" : ""}`}>
+      <div className="header-brand-row">
+        <span className="header-balance" aria-hidden="true" />
+        <span className="site-title">CT검사 안내</span>
+        <img className="smc-logo" src="/smc-logo.png?v=2" alt="SMC 삼성서울병원" />
+      </div>
+
+      <nav className="progress-toolbar" aria-label="CT검사 주요 안내 메뉴">
         <ol>
-          {guideSections.map((label, index) => {
-            const sectionNumber = index + 1;
-            const isAvailable = [1, 2, 3, 4, 5, 6, 7].includes(sectionNumber);
-            const isActive = sectionNumber === step;
+          {mainGuideSections.map((section, index) => {
+            const isActive = section.step === 3 ? isExamProcess : section.step === step;
 
             return (
-              <li key={label}>
+              <li key={section.label}>
                 {index > 0 && <span className="step-separator" aria-hidden="true">›</span>}
                 <button
                   className={`progress-item${isActive ? " active" : ""}`}
                   type="button"
                   aria-current={isActive ? "step" : undefined}
-                  disabled={!isAvailable}
-                  onClick={() => isAvailable && onNavigate(sectionNumber as Step)}
+                  onClick={() => onNavigate(section.step)}
                 >
-                  {label}
+                  {section.label}
                 </button>
               </li>
             );
           })}
         </ol>
       </nav>
+
+      {isExamProcess && (
+        <nav ref={subToolbarRef} className="process-subtoolbar" aria-label="검사순서 세부 안내 메뉴">
+          <ol>
+            {examSubSections.map((section) => {
+              const isActive = section.step === step;
+
+              return (
+                <li key={section.label}>
+                  <button
+                    className={`sub-progress-item${isActive ? " active" : ""}`}
+                    type="button"
+                    aria-current={isActive ? "step" : undefined}
+                    onClick={() => onNavigate(section.step)}
+                  >
+                    {section.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      )}
     </header>
   );
 }
@@ -149,7 +177,34 @@ function CtScanStory() {
   );
 }
 
+const contrastInfoLines = [
+  "조영제는 CT 영상에서 혈관과 장기, 병변을 더 잘 구분할 수 있도록 돕는 약제입니다.",
+  "검사 목적에 따라 정맥으로 주입하며, 모든 CT 검사에 사용하는 것은 아닙니다.",
+  "주입하는 동안 몸이 따뜻해지거나 소변이 마려운 느낌이 들 수 있으며 대부분 곧 사라집니다.",
+  "드물게 가려움, 발진, 호흡 불편 등의 반응이 나타날 수 있습니다.",
+  "이전에 조영제 부작용이 있었다면 검사 전에 반드시 직원에게 알려주세요.",
+] as const;
+
 function AboutScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  const [isContrastInfoOpen, setIsContrastInfoOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isContrastInfoOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsContrastInfoOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isContrastInfoOpen]);
+
   return (
     <section className="screen about-screen" aria-labelledby="about-title">
       <main className="screen-content about-content">
@@ -166,10 +221,65 @@ function AboutScreen({ onBack, onNext }: { onBack: () => void; onNext: () => voi
             재구성해서 장기와 혈관, 뼈와 같은 내부 구조를 선명하게 확인할 수 있는 영상 검사입니다.
           </article>
           <article className="info-block emphasis-block">
-            검사 목적에 따라 <strong>조영제를 사용하는 등 사전 준비</strong>가 필요할 수 있습니다.
+            검사 목적에 따라{" "}
+            <span className="contrast-term-wrap">
+              <button
+                className="contrast-term"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={isContrastInfoOpen}
+                onClick={() => setIsContrastInfoOpen(true)}
+              >
+                조영제
+              </button>
+              <span className="contrast-hover-hint" aria-hidden="true">클릭해보세요</span>
+            </span>
+            를 사용하는 등 사전 준비가 필요할 수 있습니다.
           </article>
         </div>
       </main>
+
+      {isContrastInfoOpen && (
+        <div className="contrast-modal-backdrop" onMouseDown={() => setIsContrastInfoOpen(false)}>
+          <section
+            className="contrast-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contrast-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              className="contrast-modal-close"
+              type="button"
+              aria-label="조영제 설명 닫기"
+              onClick={() => setIsContrastInfoOpen(false)}
+            >
+              ×
+            </button>
+            <figure className="contrast-modal-media">
+              <img
+                src="/contrast-ct-comparison.png"
+                alt="조영제 사용에 따른 CT 영상 차이 비교"
+              />
+              <figcaption>조영제 사용에 따른 CT 영상 차이 예시</figcaption>
+            </figure>
+            <p className="contrast-modal-label">CT검사 도움말</p>
+            <h2 id="contrast-modal-title">조영제란?</h2>
+            <ol className="contrast-info-list">
+              {contrastInfoLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ol>
+            <button
+              className="contrast-modal-confirm"
+              type="button"
+              onClick={() => setIsContrastInfoOpen(false)}
+            >
+              확인했어요
+            </button>
+          </section>
+        </div>
+      )}
 
       <nav className="bottom-actions" aria-label="검사 가이드 이동">
         <button className="primary-button" type="button" onClick={onNext}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -20,10 +20,24 @@ const introMessage = `${introLine1} ${introLine2}`;
 const introTypingText = `${introLine1}${introLine2}`;
 
 function Header({ step, onNavigate }: { step: Step; onNavigate: (step: Step) => void }) {
+  const toolbarRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const activeItem = toolbarRef.current?.querySelector<HTMLElement>(".progress-item.active");
+    if (!activeItem) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    activeItem.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [step]);
+
   return (
     <header className="site-header">
       <img className="smc-logo" src="/smc-logo.png?v=2" alt="SMC 삼성서울병원" />
-      <nav className="progress-toolbar" aria-label="CT검사 가이드 순서">
+      <nav ref={toolbarRef} className="progress-toolbar" aria-label="CT검사 가이드 순서">
         <ol>
           {guideSections.map((label, index) => {
             const sectionNumber = index + 1;
@@ -209,6 +223,34 @@ function ExamProcessScreen({ onBack, onNext }: { onBack: () => void; onNext: () 
             </li>
           ))}
         </ol>
+
+        <section className="operation-hours" aria-labelledby="operation-hours-title">
+          <h2 id="operation-hours-title">검사 운영 시간</h2>
+          <div className="operation-hours-grid">
+            <article className="operation-hours-card">
+              <strong>본관 · 암병원</strong>
+              <dl>
+                <div>
+                  <dt>평일</dt>
+                  <dd>07:00~20:00</dd>
+                </div>
+                <div>
+                  <dt>주말 및 공휴일</dt>
+                  <dd>08:00~16:30</dd>
+                </div>
+              </dl>
+            </article>
+            <article className="operation-hours-card">
+              <strong>양성자센터</strong>
+              <dl>
+                <div>
+                  <dt>평일</dt>
+                  <dd>08:00~16:30</dd>
+                </div>
+              </dl>
+            </article>
+          </div>
+        </section>
       </main>
 
       <nav className="bottom-actions" aria-label="검사 가이드 이동">
@@ -262,6 +304,7 @@ function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => 
             <span className="garment-icon-wrap" aria-hidden="true">
               <img src="/plain-shirt.png" alt="" />
             </span>
+            <span className="garment-hint">눌러서 확인해보세요</span>
           </button>
 
           <button
@@ -274,6 +317,7 @@ function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => 
             <span className="garment-icon-wrap" aria-hidden="true">
               <img src="/plain-pants.png" alt="" />
             </span>
+            <span className="garment-hint">눌러서 확인해보세요</span>
           </button>
         </div>
 
@@ -518,6 +562,10 @@ function PrecautionsScreen({ onBack, onFinish }: { onBack: () => void; onFinish:
 
 export default function Home() {
   const [step, setStep] = useState<Step>(1);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [step]);
 
   return (
     <div className="site-shell">

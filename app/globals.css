@@ -65,6 +65,11 @@ button {
 .progress-toolbar {
   width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
   background: linear-gradient(180deg, #f7f8f9, #f0f2f4);
   border: 1px solid #e3e5e8;
   border-radius: 16px;
@@ -91,6 +96,7 @@ button {
   display: flex;
   flex: 1 0 auto;
   align-items: center;
+  scroll-snap-align: center;
 }
 
 .step-separator {
@@ -526,6 +532,74 @@ h1 {
   box-shadow: 0 8px 20px rgb(45 59 78 / 6%);
 }
 
+.operation-hours {
+  margin-top: 24px;
+  padding: 24px;
+  background: linear-gradient(145deg, #f7f9fc, #edf1f6);
+  border: 1px solid #e0e6ee;
+  border-radius: 22px;
+  box-shadow: 0 10px 24px rgb(45 59 78 / 7%);
+}
+
+.operation-hours h2 {
+  margin: 0 0 16px;
+  color: #25282d;
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+
+.operation-hours-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.operation-hours-card {
+  padding: 18px;
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid #e2e7ee;
+  border-radius: 17px;
+}
+
+.operation-hours-card > strong {
+  display: block;
+  margin-bottom: 11px;
+  color: var(--blue);
+  font-size: 16.5px;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.operation-hours-card dl,
+.operation-hours-card dd {
+  margin: 0;
+}
+
+.operation-hours-card dl {
+  display: grid;
+  gap: 7px;
+}
+
+.operation-hours-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #575d66;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.operation-hours-card dt {
+  font-weight: 650;
+}
+
+.operation-hours-card dd {
+  flex: 0 0 auto;
+  color: #30343a;
+  font-weight: 780;
+}
+
 @keyframes timeline-in {
   to {
     opacity: 1;
@@ -549,7 +623,7 @@ h1 {
 .garment-selector {
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   place-items: center;
   min-height: 282px;
   padding: 22px 18px 18px;
@@ -626,6 +700,13 @@ h1 {
 
 .garment-selector.active .garment-icon-wrap img {
   animation-play-state: paused;
+}
+
+.garment-hint {
+  color: #7b8490;
+  font-size: 13px;
+  font-weight: 680;
+  letter-spacing: -0.025em;
 }
 
 .garment-details-region {
@@ -1469,6 +1550,30 @@ h1 {
     padding: 18px;
     font-size: 15.5px;
     border-radius: 18px;
+  }
+
+  .operation-hours {
+    margin-top: 20px;
+    padding: 19px;
+    border-radius: 19px;
+  }
+
+  .operation-hours h2 {
+    margin-bottom: 13px;
+    font-size: 18px;
+  }
+
+  .operation-hours-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .operation-hours-card {
+    padding: 16px;
+  }
+
+  .operation-hours-card dl > div {
+    font-size: 14px;
   }
 
   .changing-content {

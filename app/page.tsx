@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ClipboardPenLine, ScanSearch, Shirt, TicketCheck } from "lucide-react";
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
@@ -177,12 +178,13 @@ function CtScanStory() {
   );
 }
 
+// 이 목록에는 조영제에 대한 '기본 설명'만 담습니다.
+// 이상반응(부작용) 증상이나 과거 부작용 안내는 뒤쪽 '주의사항' 화면에서 다루므로
+// 여기서는 내용을 중복해서 추가하지 마세요.
 const contrastInfoLines = [
   "조영제는 CT 영상에서 혈관과 장기, 병변을 더 잘 구분할 수 있도록 돕는 약제입니다.",
   "검사 목적에 따라 정맥으로 주입하며, 모든 CT 검사에 사용하는 것은 아닙니다.",
   "주입하는 동안 몸이 따뜻해지거나 소변이 마려운 느낌이 들 수 있으며 대부분 곧 사라집니다.",
-  "드물게 가려움, 발진, 호흡 불편 등의 반응이 나타날 수 있습니다.",
-  "이전에 조영제 부작용이 있었다면 검사 전에 반드시 직원에게 알려주세요.",
 ] as const;
 
 function AboutScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
@@ -293,27 +295,42 @@ function AboutScreen({ onBack, onNext }: { onBack: () => void; onNext: () => voi
   );
 }
 
+// 각 단계 라벨 왼쪽에 표시할 아이콘을 함께 정의합니다.
 const examSteps = [
   {
     title: "접수",
-    description: "예약 시간 1시간 전부터 접수가 가능합니다. (검사실별 운영 시간 내)",
+    description: "예약 시간 1시간 전부터 접수가 가능합니다.",
+    Icon: TicketCheck,
   },
   {
     title: "탈의",
     description:
       "금속이 없는 옷을 입은 경우 별도 탈의 없이 진행하며, 필요한 경우 근무자의 안내에 따라 탈의합니다.",
+    Icon: Shirt,
   },
   {
     title: "검사준비",
     description: "처치실에서 동의서 작성 후 조영제 주입을 위한 혈관을 확보합니다.",
+    Icon: ClipboardPenLine,
   },
   {
     title: "CT검사",
     description: "예약 순서에 따라 검사실로 들어가 검사를 진행합니다.",
+    Icon: ScanSearch,
   },
 ] as const;
 
 function ExamProcessScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  // '검사실별 운영 시간' 문구를 누르면 아래쪽 운영 시간 영역으로 화면을 이동시킵니다.
+  // 동작 최소화(prefers-reduced-motion) 설정을 쓰는 사용자에게는 애니메이션 없이 즉시 이동합니다.
+  const handleJumpToOperationHours = () => {
+    const target = document.getElementById("operation-hours");
+    if (!target) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+  };
+
   return (
     <section className="screen process-screen" aria-labelledby="process-title">
       <main className="screen-content process-content">
@@ -325,16 +342,39 @@ function ExamProcessScreen({ onBack, onNext }: { onBack: () => void; onNext: () 
         <ol className="exam-timeline">
           {examSteps.map((item) => (
             <li className="timeline-item" key={item.title}>
-              <div className="timeline-label">{item.title}</div>
+              <div className="timeline-label">
+                <item.Icon className="timeline-label-icon" aria-hidden="true" />
+                <span>{item.title}</span>
+              </div>
               <div className="timeline-rail" aria-hidden="true">
                 <span />
               </div>
-              <article className="timeline-card">{item.description}</article>
+              <article className="timeline-card">
+                {item.description}
+                {item.title === "접수" && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="hours-jump-link"
+                      onClick={handleJumpToOperationHours}
+                      aria-label="검사실별 운영 시간으로 이동"
+                    >
+                      검사실별 운영 시간
+                      <span className="hours-jump-icon" aria-hidden="true">
+                        👇
+                      </span>
+                    </button>
+                  </>
+                )}
+              </article>
             </li>
           ))}
         </ol>
 
-        <section className="operation-hours" aria-labelledby="operation-hours-title">
+        {/* 위 '검사실별 운영 시간' 버튼이 스크롤로 이동하는 목적지입니다.
+            id와 scroll-margin-top(전역 CSS)으로 상단 고정 메뉴에 가려지지 않게 합니다. */}
+        <section className="operation-hours" id="operation-hours" aria-labelledby="operation-hours-title">
           <h2 id="operation-hours-title">검사 운영 시간</h2>
           <div className="operation-hours-grid">
             <article className="operation-hours-card">
@@ -585,7 +625,7 @@ function CtExamScreen({ onBack, onNext }: { onBack: () => void; onNext: () => vo
         <div className="ct-monitoring-panel">
           <figure className="ct-monitoring-visual">
             <img
-              src="/ct-monitoring-scene.png"
+              src="/ct-monitoring-scene-korean.png"
               alt="조정실에서 검사자가 CT 영상을 확인하며 유리창 너머 검사 중인 환자를 관찰하는 모습"
             />
           </figure>

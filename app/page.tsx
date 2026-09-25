@@ -12,6 +12,12 @@ const guideModeLabels: Record<GuideMode, string> = {
   pediatric: "소아",
 };
 
+const guideModeSubtitles: Record<GuideMode, string> = {
+  general: "조영검사",
+  noncontrast: "비조영검사",
+  pediatric: "소아검사",
+};
+
 const mainGuideSections = [
   { label: "CT검사란?", step: 2 },
   { label: "검사순서", step: 3 },
@@ -42,6 +48,9 @@ function Header({
 }) {
   const subToolbarRef = useRef<HTMLElement>(null);
   const isExamProcess = step >= 3 && step <= 6;
+  const visibleExamSubSections = mode === "noncontrast"
+    ? examSubSections.filter((section) => section.step !== 5)
+    : examSubSections;
 
   useEffect(() => {
     const activeItem = subToolbarRef.current?.querySelector<HTMLElement>(".sub-progress-item.active");
@@ -72,7 +81,10 @@ function Header({
             ))}
           </select>
         </label>
-        <span className="site-title">CT검사 안내</span>
+        <span className="site-heading-group">
+          <span className="site-title">CT 검사 가이드</span>
+          <small>{guideModeSubtitles[mode]}</small>
+        </span>
         <img className="smc-logo" src="/smc-logo.png?v=2" alt="SMC 삼성서울병원" />
       </div>
 
@@ -101,7 +113,7 @@ function Header({
       {isExamProcess && (
         <nav ref={subToolbarRef} className="process-subtoolbar" aria-label="검사순서 세부 안내 메뉴">
           <ol>
-            {examSubSections.map((section) => {
+          {visibleExamSubSections.map((section) => {
               const isActive = section.step === step;
 
               return (
@@ -189,7 +201,12 @@ function IntroScreen({ mode, onStart }: { mode: GuideMode; onStart: () => void }
   );
 }
 
-function CtScanStory() {
+function CtScanStory({ mode }: { mode: GuideMode }) {
+  const scanImage = mode === "noncontrast" ? "/noncontrast-ct.gif" : "/ct-scan.gif";
+  const scanImageAlt = mode === "noncontrast"
+    ? "연속으로 펼쳐지는 비조영 두부 CT axial 단면 영상"
+    : "연속으로 펼쳐지는 CT 단면 영상";
+
   return (
     <figure className="scan-story" aria-label="CT 장비가 한 바퀴 회전해 단면 영상을 만드는 과정">
       <div className="scanner-panel">
@@ -203,7 +220,7 @@ function CtScanStory() {
       </div>
       <div className="scan-result">
         <div className="scan-result-frame">
-          <img src="/ct-scan.gif" alt="연속으로 펼쳐지는 CT 단면 영상" />
+          <img src={scanImage} alt={scanImageAlt} />
         </div>
       </div>
     </figure>
@@ -255,7 +272,7 @@ function AboutScreen({
           <p>CT검사의 원리와 검사 전 준비사항을 알려드립니다.</p>
         </div>
 
-        <CtScanStory />
+        <CtScanStory mode={mode} />
 
         <div className="info-blocks">
           <article className="info-block">
@@ -265,28 +282,24 @@ function AboutScreen({
               <>CT검사는 X-ray를 이용해 몸 안을 여러 각도에서 검사하고, 그 데이터를 단면 영상처럼 재구성해서 장기와 혈관, 뼈와 같은 내부 구조를 선명하게 확인할 수 있는 영상 검사입니다.</>
             )}
           </article>
-          <article className="info-block emphasis-block">
-            {mode === "noncontrast" ? (
-              <>비조영 CT는 정맥으로 조영제를 주입하지 않고 진행합니다. 검사 종류에 따라 별도의 준비 안내가 있을 수 있으므로 예약 안내를 확인해주세요.</>
-            ) : (
-              <>
-                검사 목적에 따라{" "}
-                <span className="contrast-term-wrap">
-                  <button
-                    className="contrast-term"
-                    type="button"
-                    aria-haspopup="dialog"
-                    aria-expanded={isContrastInfoOpen}
-                    onClick={() => setIsContrastInfoOpen(true)}
-                  >
-                    조영제
-                  </button>
-                  <span className="contrast-hover-hint" aria-hidden="true">클릭해보세요</span>
-                </span>
-                를 사용하거나 별도의 준비가 필요할 수 있습니다.
-              </>
-            )}
-          </article>
+          {mode !== "noncontrast" && (
+            <article className="info-block emphasis-block">
+              검사 목적에 따라{" "}
+              <span className="contrast-term-wrap">
+                <button
+                  className="contrast-term"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-expanded={isContrastInfoOpen}
+                  onClick={() => setIsContrastInfoOpen(true)}
+                >
+                  조영제
+                </button>
+                <span className="contrast-hover-hint" aria-hidden="true">클릭해보세요</span>
+              </span>
+              를 사용하거나 별도의 준비가 필요할 수 있습니다.
+            </article>
+          )}
         </div>
       </main>
 
@@ -350,7 +363,6 @@ function getExamSteps(mode: GuideMode) {
     return [
       { title: "접수", description: "예약 시간 1시간 전부터 접수가 가능합니다.", Icon: TicketCheck },
       { title: "탈의", description: "금속이 없는 옷을 입은 경우 별도 탈의 없이 진행하며, 필요한 경우 근무자의 안내에 따라 탈의합니다.", Icon: Shirt },
-      { title: "검사준비", description: "조영제 동의서 작성과 혈관 확보 없이 검사 부위에 맞는 자세를 준비합니다.", Icon: ClipboardPenLine },
       { title: "CT검사", description: "예약 순서에 따라 검사실로 들어가 비조영 검사를 진행합니다.", Icon: ScanSearch },
     ] as const;
   }
@@ -777,8 +789,7 @@ function CtExamScreen({
 function getCautionSections(mode: GuideMode) {
   if (mode === "noncontrast") {
     return [
-      { title: "검사 전에 알려주세요", tone: "before", items: ["임신 중이거나 임신 가능성이 있는 경우", "정해진 자세를 유지하거나 숨을 참기 어려운 경우", "검사 부위의 금속 물품을 제거하기 어려운 경우"] },
-      { title: "검사 중 즉시 알려주세요", tone: "urgent", items: ["통증이나 어지러움 등 불편한 증상이 있는 경우", "숨을 참기 어렵거나 호흡이 불편한 경우", "불안감이 심하거나 자세를 유지하기 어려운 경우"] },
+      { title: "검사 전에 알려주세요", tone: "before", items: ["임신 중이거나 임신 가능성이 있는 경우", "검사 부위의 금속 물품을 제거하기 어려운 경우"] },
       { title: "검사 후 확인해주세요", tone: "after", items: ["직원의 별도 안내가 없다면 일상생활로 돌아가도 됩니다.", "검사와 관련해 궁금한 점이 있다면 직원에게 문의해주세요."] },
     ];
   }
@@ -867,11 +878,11 @@ export function GuideApp({ mode }: { mode: GuideMode }) {
       ) : step === 3 ? (
         <ExamProcessScreen mode={mode} onBack={() => setStep(2)} onNext={() => setStep(4)} />
       ) : step === 4 ? (
-        <ChangingScreen onBack={() => setStep(3)} onNext={() => setStep(5)} />
+        <ChangingScreen onBack={() => setStep(3)} onNext={() => setStep(mode === "noncontrast" ? 6 : 5)} />
       ) : step === 5 ? (
         <PreparationScreen mode={mode} onBack={() => setStep(4)} onNext={() => setStep(6)} />
       ) : step === 6 ? (
-        <CtExamScreen mode={mode} onBack={() => setStep(5)} onNext={() => setStep(7)} />
+        <CtExamScreen mode={mode} onBack={() => setStep(mode === "noncontrast" ? 4 : 5)} onNext={() => setStep(7)} />
       ) : (
         <PrecautionsScreen mode={mode} onBack={() => setStep(6)} onFinish={() => setStep(1)} />
       )}

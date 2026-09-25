@@ -92,6 +92,10 @@ ct-guide/
 - 페이지 제목, 설명과 공유 미리보기: `app/layout.tsx`
 - 로고와 안내 이미지: `public/`
 
+## 이미지 출처
+
+- 비조영검사 axial CT GIF: Wikimedia Commons의 정상 비조영 두부 CT 연속 단면을 환자 안내 화면에 맞게 편집해 사용했습니다. 원본: Mikael Häggström, M.D., CC0 1.0.
+
 ## 배포
 
 - GitHub 저장소: [Joana-son/ct-guide](https://github.com/Joana-son/ct-guide)

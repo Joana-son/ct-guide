@@ -219,7 +219,7 @@ function AboutScreen({ onBack, onNext }: { onBack: () => void; onNext: () => voi
 
         <div className="info-blocks">
           <article className="info-block">
-            CT검사는 X-ray를 이용해 몸 안을 여러 각도에서 촬영하고, 그 데이터를 단면 영상처럼
+            CT검사는 X-ray를 이용해 몸 안을 여러 각도에서 검사하고, 그 데이터를 단면 영상처럼
             재구성해서 장기와 혈관, 뼈와 같은 내부 구조를 선명하게 확인할 수 있는 영상 검사입니다.
           </article>
           <article className="info-block emphasis-block">
@@ -561,12 +561,12 @@ const ctExamStages = [
     description: "검사 테이블에 누운 후 검사 부위에 맞춰 자세를 잡습니다.",
   },
   {
-    title: "촬영 시작",
-    description: "검사 테이블이 CT 장비 안으로 이동하며 촬영이 진행됩니다.",
+    title: "검사 시작",
+    description: "검사 테이블이 CT 장비 안으로 이동하며 검사가 진행됩니다.",
   },
   {
     title: "움직임·호흡 안내",
-    description: "정확한 촬영을 위해 움직이지 말고, 안내 방송에 따라 숨을 잠시 참아주세요.",
+    description: "정확한 검사를 위해 움직이지 말고, 안내 방송에 따라 숨을 잠시 참아주세요.",
     breathing: true,
   },
   {

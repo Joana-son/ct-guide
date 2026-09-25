@@ -2,7 +2,14 @@
 
 삼성서울병원 CT검사를 앞둔 환자가 검사 전 과정과 준비사항을 모바일에서 쉽게 확인할 수 있도록 만든 안내 웹앱입니다.
 
-검사의 기본 원리부터 접수, 탈의, 조영제 검사 준비, 실제 검사 과정과 주의사항까지 순서대로 안내합니다.
+검사의 기본 원리부터 접수, 탈의, 검사 준비, 실제 검사 과정과 주의사항까지 순서대로 안내합니다. 일반 조영검사·비조영검사·소아검사는 각각 전용 URL로 제공됩니다.
+
+## 검사별 주소
+
+- 일반 조영검사: `https://ct-guide.smcradiology.workers.dev/contrast`
+- 비조영검사: `https://ct-guide.smcradiology.workers.dev/noncontrast`
+- 소아검사: `https://ct-guide.smcradiology.workers.dev/pediatric`
+- 기존 기본 주소(`/`)는 일반 조영검사 안내를 유지합니다.
 
 ## 주요 기능
 
@@ -66,6 +73,9 @@ npm run lint
 ct-guide/
 ├─ app/
 │  ├─ page.tsx        # 7단계 안내 화면과 사용자 상호작용
+│  ├─ contrast/       # 일반 조영검사 전용 URL
+│  ├─ noncontrast/    # 비조영검사 전용 URL
+│  ├─ pediatric/      # 소아검사 전용 URL
 │  ├─ globals.css     # 전체 디자인, 반응형 레이아웃과 애니메이션
 │  └─ layout.tsx      # 문서 구조와 검색·공유용 메타데이터
 ├─ public/            # 로고, CT 장비·검사 이미지와 안내 이미지

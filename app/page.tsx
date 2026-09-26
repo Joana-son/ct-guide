@@ -7,7 +7,7 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 type GuideMode = "general" | "noncontrast" | "pediatric";
 
 const guideModeLabels: Record<GuideMode, string> = {
-  general: "일반조영",
+  general: "조영",
   noncontrast: "비조영",
   pediatric: "소아",
 };
@@ -35,6 +35,21 @@ const introLine2 = "안내해드립니다.";
 const introMessage = `${introLine1} ${introLine2}`;
 const introTypingText = `${introLine1}${introLine2}`;
 
+const getScanImage = (mode: GuideMode) => mode === "general" ? "/ct-scan.gif" : "/noncontrast-ct.gif";
+const getMonitoringImage = (mode: GuideMode) => mode === "pediatric"
+  ? "/ct-monitoring-scene-pediatric.webp"
+  : "/ct-monitoring-scene-korean.webp";
+
+// 화면을 넘긴 직후 큰 이미지가 처음 로드되면서 끊기지 않도록 다음 화면의 이미지를 미리 준비합니다.
+function preloadImages(sources: string[]) {
+  sources.forEach((source) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = source;
+    void image.decode().catch(() => undefined);
+  });
+}
+
 function Header({
   step,
   mode,
@@ -48,7 +63,7 @@ function Header({
 }) {
   const subToolbarRef = useRef<HTMLElement>(null);
   const isExamProcess = step >= 3 && step <= 6;
-  const visibleExamSubSections = mode === "noncontrast"
+  const visibleExamSubSections = mode !== "general"
     ? examSubSections.filter((section) => section.step !== 5)
     : examSubSections;
 
@@ -198,15 +213,18 @@ function IntroScreen({ mode, onStart }: { mode: GuideMode; onStart: () => void }
 }
 
 function CtScanStory({ mode }: { mode: GuideMode }) {
-  const scanImage = mode === "noncontrast" ? "/noncontrast-ct.gif" : "/ct-scan.gif";
-  const scanImageAlt = mode === "noncontrast"
+  const [scannerReady, setScannerReady] = useState(false);
+  const [scanReady, setScanReady] = useState(false);
+  const scanImage = getScanImage(mode);
+  const scanImageAlt = mode !== "general"
     ? "연속으로 펼쳐지는 비조영 두부 CT axial 단면 영상"
     : "연속으로 펼쳐지는 CT 단면 영상";
+  const isReady = scannerReady && scanReady;
 
   return (
-    <figure className="scan-story" aria-label="CT 장비가 한 바퀴 회전해 단면 영상을 만드는 과정">
+    <figure className={`scan-story${isReady ? " is-ready" : ""}`} aria-label="CT 장비가 한 바퀴 회전해 단면 영상을 만드는 과정">
       <div className="scanner-panel">
-        <img src="/siemens-ct.png" alt="Siemens CT 장비" />
+        <img src="/siemens-ct.webp" alt="Siemens CT 장비" decoding="async" onLoad={() => setScannerReady(true)} />
         <div className="gantry-orbit" aria-hidden="true">
           <span />
         </div>
@@ -216,7 +234,7 @@ function CtScanStory({ mode }: { mode: GuideMode }) {
       </div>
       <div className="scan-result">
         <div className="scan-result-frame">
-          <img src={scanImage} alt={scanImageAlt} />
+          <img src={scanImage} alt={scanImageAlt} decoding="async" onLoad={() => setScanReady(true)} />
         </div>
       </div>
     </figure>
@@ -273,12 +291,17 @@ function AboutScreen({
         <div className="info-blocks">
           <article className="info-block">
             {mode === "pediatric" ? (
-              <>소아 CT검사는 X-ray를 이용해 아이의 몸 안을 빠르게 확인하는 영상 검사입니다. 아이의 크기와 검사 부위에 맞춰 필요한 범위를 검사합니다.</>
+              <>소아 CT검사는 X선을 이용해 신체 내부를 단면 영상으로 확인하는 검사입니다. 환자의 연령과 체격, 검사 부위에 따라 검사 범위와 조건을 조정하여 진단에 필요한 최소한의 방사선량으로 검사를 시행합니다.</>
             ) : (
               <>CT검사는 X-ray를 이용해 몸 안을 여러 각도에서 검사하고, 그 데이터를 단면 영상처럼 재구성해서 장기와 혈관, 뼈와 같은 내부 구조를 선명하게 확인할 수 있는 영상 검사입니다.</>
             )}
           </article>
-          {mode !== "noncontrast" && (
+          {mode === "pediatric" && (
+            <article className="info-block emphasis-block">
+              검사 처방에 따라 조영제를 사용하거나 별도의 준비가 필요할 수 있습니다.
+            </article>
+          )}
+          {mode === "general" && (
             <article className="info-block emphasis-block">
               검사 목적에 따라{" "}
               <span className="contrast-term-wrap">
@@ -365,10 +388,9 @@ function getExamSteps(mode: GuideMode) {
 
   if (mode === "pediatric") {
     return [
-      { title: "접수", description: "보호자와 함께 접수하고 아이의 최근 건강 상태와 복용 약을 확인합니다.", Icon: TicketCheck },
+      { title: "접수", description: "예약 시간 1시간 전부터 접수가 가능합니다.", Icon: TicketCheck },
       { title: "탈의", description: "금속이 없는 편안한 옷을 준비하고, 필요한 경우 직원의 안내에 따라 검사복으로 갈아입습니다.", Icon: Shirt },
-      { title: "검사준비", description: "아이와 보호자가 검사 설명을 듣습니다. 조영제나 진정 준비가 필요한 경우 별도로 안내합니다.", Icon: ClipboardPenLine },
-      { title: "CT검사", description: "아이가 안심할 수 있도록 설명을 들은 뒤 검사실에서 검사를 진행합니다.", Icon: ScanSearch },
+      { title: "CT검사", description: "검사에 대한 설명을 들은 뒤 검사 테이블에 누워 CT검사를 진행합니다. 필요한 경우 근무자의 안내에 따라 보호자가 함께할 수 있습니다.", Icon: ScanSearch },
     ] as const;
   }
 
@@ -487,21 +509,25 @@ function ExamProcessScreen({
 
 function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const [selectedGarment, setSelectedGarment] = useState<"top" | "bottom" | null>(null);
+  const [topImageReady, setTopImageReady] = useState(false);
+  const [bottomImageReady, setBottomImageReady] = useState(false);
+  const [detailImageReady, setDetailImageReady] = useState(false);
   const selectedDetails = selectedGarment === "top"
     ? {
         title: "상의에서 확인할 항목",
-        src: "/changing-upper-details.png",
+        src: "/changing-upper-details.webp",
         alt: "상의 탈의 안내: 금속 단추, 지퍼, 금속 장식, 금속 로고 상표, 여성 속옷, 목걸이",
       }
     : selectedGarment === "bottom"
       ? {
           title: "하의에서 확인할 항목",
-          src: "/changing-lower-details.png",
+          src: "/changing-lower-details.webp",
           alt: "하의 탈의 안내: 금속 단추, 지퍼, 금속 장식, 금속 로고 상표",
         }
       : null;
 
   const toggleGarment = (garment: "top" | "bottom") => {
+    setDetailImageReady(false);
     setSelectedGarment((current) => (current === garment ? null : garment));
   };
 
@@ -513,7 +539,7 @@ function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => 
           <p><strong>검사 부위에 따라</strong> 금속이 포함된 복장은 영상에 영향을 줄 수 있습니다.</p>
         </div>
 
-        <div className="garment-selectors" aria-label="탈의 복장 종류 선택">
+        <div className={`garment-selectors${topImageReady && bottomImageReady ? " is-ready" : ""}`} aria-label="탈의 복장 종류 선택">
           <button
             className={`garment-selector ${selectedGarment === "top" ? "active" : ""}`}
             type="button"
@@ -522,7 +548,7 @@ function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => 
           >
             <span className="garment-label">상의</span>
             <span className="garment-icon-wrap" aria-hidden="true">
-              <img src="/plain-shirt.png" alt="" />
+              <img src="/plain-shirt.webp" alt="" decoding="async" onLoad={() => setTopImageReady(true)} />
             </span>
             <span className="garment-hint">눌러서 확인해보세요</span>
           </button>
@@ -535,7 +561,7 @@ function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => 
           >
             <span className="garment-label">하의</span>
             <span className="garment-icon-wrap" aria-hidden="true">
-              <img src="/plain-pants.png" alt="" />
+              <img src="/plain-pants.webp" alt="" decoding="async" onLoad={() => setBottomImageReady(true)} />
             </span>
             <span className="garment-hint">눌러서 확인해보세요</span>
           </button>
@@ -543,9 +569,9 @@ function ChangingScreen({ onBack, onNext }: { onBack: () => void; onNext: () => 
 
         <div className="garment-details-region" aria-live="polite">
           {selectedDetails && (
-            <div className="garment-details" key={selectedGarment}>
+            <div className={`garment-details${detailImageReady ? " is-ready" : ""}`} key={selectedGarment}>
               <strong className="garment-detail-title">{selectedDetails.title}</strong>
-              <img src={selectedDetails.src} alt={selectedDetails.alt} />
+              <img src={selectedDetails.src} alt={selectedDetails.alt} decoding="async" onLoad={() => setDetailImageReady(true)} />
             </div>
           )}
         </div>
@@ -685,20 +711,11 @@ function getCtExamStages(mode: GuideMode) {
     { title: "움직임·호흡 안내", description: "정확한 검사를 위해 움직이지 말고, 안내 방송에 따라 숨을 잠시 참아주세요.", breathing: true },
   ] as const;
 
-  if (mode === "noncontrast") {
+  if (mode !== "general") {
     return [
       { title: "검사 준비", description: "검사 테이블에 누운 후 안내에 따라 자세를 잡습니다." },
       { title: "검사 시작", description: "검사 테이블이 CT 장비 안으로 이동하며 검사가 진행됩니다." },
       { title: "자세 유지", description: "정확한 검사를 위해 움직이지 않고 자세를 그대로 유지해주세요." },
-    ] as const;
-  }
-
-  if (mode === "pediatric") {
-    return [
-      { title: "편안하게 눕기", description: "직원의 도움을 받아 검사 테이블에 편안하게 눕고 자세를 잡아요." },
-      { title: "검사 시작", description: "테이블이 커다란 도넛 모양의 CT 장비 안으로 천천히 움직여요." },
-      { title: "잠깐 멈추기", description: "선명한 사진을 위해 안내에 따라 몸을 움직이지 않고 숨을 잠깐 참아주세요.", breathing: true },
-      { title: "조영제를 사용하는 경우", description: "몸이 따뜻해지거나 소변이 마려운 느낌이 들 수 있지만 대부분 곧 사라져요." },
     ] as const;
   }
 
@@ -718,7 +735,9 @@ function CtExamScreen({
   onNext: () => void;
 }) {
   const [breathingPhase, setBreathingPhase] = useState<"idle" | "hold" | "breathe">("idle");
+  const [monitoringImageReady, setMonitoringImageReady] = useState(false);
   const ctExamStages = getCtExamStages(mode);
+  const monitoringImage = getMonitoringImage(mode);
 
   useEffect(() => {
     if (breathingPhase !== "hold") return;
@@ -763,11 +782,13 @@ function CtExamScreen({
           ))}
         </ol>
 
-        <div className="ct-monitoring-panel">
+        <div className={`ct-monitoring-panel${monitoringImageReady ? " is-ready" : ""}`}>
           <figure className="ct-monitoring-visual">
             <img
-              src="/ct-monitoring-scene-korean.png"
-              alt="조정실에서 검사자가 CT 영상을 확인하며 유리창 너머 검사 중인 환자를 관찰하는 모습"
+              src={monitoringImage}
+              alt={mode === "pediatric" ? "보호자가 곁에서 지켜보는 가운데 안전벨트를 착용하고 CT검사를 받는 소아 환자" : "조정실에서 검사자가 CT 영상을 확인하며 유리창 너머 검사 중인 환자를 관찰하는 모습"}
+              decoding="async"
+              onLoad={() => setMonitoringImageReady(true)}
             />
           </figure>
           <p className="ct-monitor-note">
@@ -798,9 +819,9 @@ function getCautionSections(mode: GuideMode) {
 
   if (mode === "pediatric") {
     return [
-      { title: "검사 전에 알려주세요", tone: "before", items: ["최근 감기, 발열 등 아픈 증상이 있는 경우", "복용 중인 약이나 알레르기, 조영제 부작용 이력이 있는 경우", "진정검사 안내를 받았는데 금식 지침을 지키기 어려운 경우"] },
-      { title: "검사 중 즉시 알려주세요", tone: "urgent", items: ["아이가 통증이나 가려움, 어지러움 등을 호소하는 경우", "아이가 많이 불안해하거나 자세를 유지하기 어려운 경우", "호흡이 불편하거나 얼굴과 목이 붓는 느낌이 있는 경우"] },
-      { title: "검사 후 확인해주세요", tone: "after", items: ["진정검사를 했다면 안내받은 회복·식사·활동 지침을 따라주세요.", "귀가 후 불편한 증상이 생기거나 계속되면 병원에 문의해주세요."] },
+      { title: "검사 전에 알려주세요", tone: "before", items: ["검사 중 자세를 유지하기 어렵거나 불안이 큰 경우", "검사실에 동반할 보호자가 임신 중이거나 임신 가능성이 있는 경우"] },
+      { title: "검사 중 안전하게 지켜주세요", tone: "safety", items: ["검사 테이블은 바닥에서 높게 위치하므로 안전벨트를 착용한 뒤 검사를 진행합니다.", "낙상 위험이 있으므로 환자가 임의로 움직이거나 일어나지 않도록 해주세요.", "보호자가 함께 있는 동안에는 특히 어린 환자의 움직임을 항상 살펴주세요."] },
+      { title: "검사 후 확인해주세요", tone: "after", items: ["직원의 별도 안내가 없다면 일상생활로 돌아가도 됩니다.", "귀가 후 불편한 증상이 생기거나 계속되면 병원에 문의해주세요."] },
     ];
   }
 
@@ -861,6 +882,18 @@ export function GuideApp({ mode }: { mode: GuideMode }) {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [step]);
 
+  useEffect(() => {
+    const assets = step === 1
+      ? ["/siemens-ct.webp", getScanImage(mode)]
+      : step <= 3
+        ? ["/plain-shirt.webp", "/plain-pants.webp", "/changing-upper-details.webp", "/changing-lower-details.webp"]
+        : step <= 5
+          ? [getMonitoringImage(mode)]
+          : [];
+    const timer = window.setTimeout(() => preloadImages(assets), 80);
+    return () => window.clearTimeout(timer);
+  }, [mode, step]);
+
   const handleModeChange = (nextMode: GuideMode) => {
     const modePaths: Record<GuideMode, string> = {
       general: "/contrast",
@@ -880,11 +913,11 @@ export function GuideApp({ mode }: { mode: GuideMode }) {
       ) : step === 3 ? (
         <ExamProcessScreen mode={mode} onBack={() => setStep(2)} onNext={() => setStep(4)} />
       ) : step === 4 ? (
-        <ChangingScreen onBack={() => setStep(3)} onNext={() => setStep(mode === "noncontrast" ? 6 : 5)} />
+        <ChangingScreen onBack={() => setStep(3)} onNext={() => setStep(mode === "general" ? 5 : 6)} />
       ) : step === 5 ? (
         <PreparationScreen mode={mode} onBack={() => setStep(4)} onNext={() => setStep(6)} />
       ) : step === 6 ? (
-        <CtExamScreen mode={mode} onBack={() => setStep(mode === "noncontrast" ? 4 : 5)} onNext={() => setStep(7)} />
+        <CtExamScreen mode={mode} onBack={() => setStep(mode === "general" ? 5 : 4)} onNext={() => setStep(7)} />
       ) : (
         <PrecautionsScreen mode={mode} onBack={() => setStep(6)} onFinish={() => setStep(1)} />
       )}

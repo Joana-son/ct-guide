@@ -7,7 +7,7 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 type GuideMode = "general" | "noncontrast" | "pediatric";
 
 const guideModeLabels: Record<GuideMode, string> = {
-  general: "일반 조영",
+  general: "일반조영",
   noncontrast: "비조영",
   pediatric: "소아",
 };
@@ -81,10 +81,7 @@ function Header({
             ))}
           </select>
         </label>
-        <span className="site-heading-group">
-          <span className="site-title">CT 검사 가이드</span>
-          <small>{guideModeSubtitles[mode]}</small>
-        </span>
+        <span className="site-title">CT 검사 가이드</span>
         <img className="smc-logo" src="/smc-logo.png?v=2" alt="SMC 삼성서울병원" />
       </div>
 
@@ -171,9 +168,8 @@ function IntroScreen({ mode, onStart }: { mode: GuideMode; onStart: () => void }
     <section className="screen intro-screen" aria-labelledby="intro-title">
       <main className="screen-content intro-content">
         <div className="intro-copy">
-          <h1 id="intro-title">
-            {mode === "noncontrast" ? "비조영 CT 검사 가이드" : mode === "pediatric" ? "소아 CT 검사 가이드" : "조영 CT 검사 가이드"}
-          </h1>
+          <h1 id="intro-title">CT 검사 가이드</h1>
+          <p className="intro-mode-label">{guideModeSubtitles[mode]}</p>
           <p className="intro-description" aria-label={introMessage}>
             <span aria-hidden="true">
               {typedMessage.slice(0, introLine1.length)}

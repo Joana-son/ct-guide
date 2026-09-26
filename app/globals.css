@@ -91,11 +91,11 @@ button {
 }
 
 .guide-mode-selector select {
-  width: 96px;
-  min-height: 36px;
-  padding: 0 27px 0 12px;
+  width: 82px;
+  min-height: 30px;
+  padding: 0 21px 0 8px;
   color: #23304b;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 750;
   background: #f4f6fa;
   border: 1px solid #d8dde6;
@@ -103,28 +103,14 @@ button {
   cursor: pointer;
 }
 
-.site-heading-group {
-  justify-self: center;
-  display: grid;
-  gap: 3px;
-  text-align: center;
-}
-
 .site-title {
+  justify-self: center;
   color: #1c2027;
   font-size: 23px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   letter-spacing: -0.055em;
-}
-
-.site-heading-group small {
-  color: #6f7580;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
 }
 
 .smc-logo {
@@ -316,10 +302,19 @@ h1 {
   letter-spacing: -0.055em;
 }
 
+.intro-mode-label {
+  margin: 13px 0 0;
+  color: var(--blue);
+  font-size: clamp(14px, 2.4vw, 17px);
+  font-weight: 750;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+
 .intro-description {
   max-width: 510px;
   min-height: 3.2em;
-  margin: 26px 0 0;
+  margin: 14px 0 0;
   color: var(--muted);
   font-size: clamp(19px, 3.4vw, 24px);
   line-height: 1.6;
@@ -1901,19 +1896,15 @@ h1 {
   }
 
   .guide-mode-selector select {
-    width: 80px;
-    min-height: 34px;
-    padding-right: 22px;
-    padding-left: 9px;
-    font-size: 12px;
+    width: 74px;
+    min-height: 28px;
+    padding-right: 16px;
+    padding-left: 4px;
+    font-size: 8px;
   }
 
   .site-title {
     font-size: 19px;
-  }
-
-  .site-heading-group small {
-    font-size: 10px;
   }
 
   .smc-logo {

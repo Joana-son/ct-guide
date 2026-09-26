@@ -112,7 +112,7 @@ function Header({
 
       {isExamProcess && (
         <nav ref={subToolbarRef} className="process-subtoolbar" aria-label="검사순서 세부 안내 메뉴">
-          <ol>
+          <ol className={visibleExamSubSections.length === 2 ? "two-items" : undefined}>
           {visibleExamSubSections.map((section) => {
               const isActive = section.step === step;
 
@@ -689,7 +689,13 @@ function getCtExamStages(mode: GuideMode) {
     { title: "움직임·호흡 안내", description: "정확한 검사를 위해 움직이지 말고, 안내 방송에 따라 숨을 잠시 참아주세요.", breathing: true },
   ] as const;
 
-  if (mode === "noncontrast") return basicStages;
+  if (mode === "noncontrast") {
+    return [
+      { title: "검사 준비", description: "검사 테이블에 누운 후 안내에 따라 자세를 잡습니다." },
+      { title: "검사 시작", description: "검사 테이블이 CT 장비 안으로 이동하며 검사가 진행됩니다." },
+      { title: "자세 유지", description: "정확한 검사를 위해 움직이지 않고 자세를 그대로 유지해주세요." },
+    ] as const;
+  }
 
   if (mode === "pediatric") {
     return [

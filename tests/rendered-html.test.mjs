@@ -1,91 +1,92 @@
 import assert from "node:assert/strict";
-import { access, readFile, readdir } from "node:fs/promises";
-import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { after, before, test } from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
-const templateRoot = new URL("../", import.meta.url);
-const previewRoot = new URL("../app/_sites-preview/", import.meta.url);
+let worker;
 
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+before(async () => {
+  process.env.WRANGLER_SEND_METRICS = "false";
+  process.env.WRANGLER_LOG_PATH = ".wrangler/logs";
+  const { unstable_dev } = await import("wrangler");
 
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
+  // Exercise the real Cloudflare build rather than importing it as a Node module.
+  worker = await unstable_dev(
+    fileURLToPath(new URL("../dist/server/index.js", import.meta.url)),
     {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
+      config: fileURLToPath(new URL("../dist/server/wrangler.json", import.meta.url)),
+      local: true,
+      port: 0,
+      inspectorPort: 0,
+      bundle: false,
+      persist: false,
+      logLevel: "error",
+      experimental: {
+        disableExperimentalWarning: true,
+        disableDevRegistry: true,
+        enableContainers: false,
+        watch: false,
       },
     },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
   );
-}
+}, { timeout: 60_000 });
 
-test("server-renders the starter loading skeleton", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
-  assert.match(html, developmentPreviewMeta);
-  assert.match(html, /<title>Your site is taking shape<\/title>/i);
-  assert.match(html, /Building your site/);
-  assert.match(html, /Your site is taking shape/);
-  assert.match(
-    html,
-    /Your first version will appear here automatically when it’s ready\./,
-  );
-  assert.doesNotMatch(html, /Codex/);
-  assert.match(html, /react-loading-skeleton/);
-  assert.match(html, /role="status"/);
+after(async () => {
+  await worker?.stop();
 });
 
-test("keeps the loading skeleton scoped and disposable", async () => {
-  const [preview, css, page, layout, packageJson, files] = await Promise.all([
-    readFile(new URL("SkeletonPreview.tsx", previewRoot), "utf8"),
-    readFile(new URL("preview.css", previewRoot), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readdir(previewRoot),
-  ]);
+for (const [path, label, mode] of [
+  ["/", "조영검사", "general"],
+  ["/contrast", "조영검사", "general"],
+  ["/noncontrast", "비조영검사", "noncontrast"],
+  ["/pediatric", "소아검사", "pediatric"],
+]) {
+  test(`${path} renders the correct exam guide and loadable browser assets`, async () => {
+    const response = await worker.fetch(path);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+    const html = await response.text();
+    assert.match(html, /<h1[^>]*>CT 검사 가이드<\/h1>/);
+    assert.ok(html.includes(`class="intro-mode-label">${label}</p>`));
+    assert.ok(html.includes(`<option value="${mode}" selected=""`));
+    assert.match(html, /시작하기/);
+    assert.doesNotMatch(html, /Building your site|Your site is taking shape/);
 
-  assert.deepEqual(files.sort(), ["SkeletonPreview.tsx", "preview.css"]);
-  assert.match(preview, /from "react-loading-skeleton"/);
-  assert.match(preview, /baseColor="#eceae7"/);
-  assert.match(preview, /highlightColor="#f9f8f6"/);
-  assert.match(preview, /duration=\{2\.8\}/);
-  assert.match(preview, /sites-skeleton-search-placeholder/);
-  assert.match(packageJson, /"react-loading-skeleton": "3\.5\.0"/);
+    const scripts = [...html.matchAll(/<script\b[^>]*src="([^"]+)"/g)].map((m) => m[1]);
+    const styles = [...html.matchAll(/<link\b(?=[^>]*rel="stylesheet")[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(scripts.length > 0, "Navigation needs client JavaScript");
+    assert.ok(styles.length > 0, "Guide styles must be included");
+    for (const assetPath of [...scripts, ...styles]) {
+      const asset = await worker.fetch(assetPath);
+      assert.equal(asset.status, 200, assetPath);
+      assert.match(asset.headers.get("content-type") ?? "", /javascript|css/i, assetPath);
+      await asset.arrayBuffer();
+    }
+  });
+}
 
-  const shellIndex = preview.indexOf('className="sites-skeleton-shell"');
-  const statusIndex = preview.indexOf('className="sites-skeleton-status"');
-  assert.ok(shellIndex >= 0 && statusIndex > shellIndex);
-  assert.match(css, /position:\s*fixed/);
-  assert.match(css, /inset:\s*0/);
-  assert.match(css, /opacity:\s*0\.52/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
-  assert.doesNotMatch(css, /#020617|canvas|pets|progress/i);
-  assert.doesNotMatch(
-    preview,
-    /loading-spinner|status-mark|status-progress|canvas|cookie|random/i,
-  );
+test("serves the patient guide images after the dependency update", async () => {
+  for (const path of [
+    "/smc-logo.png",
+    "/ct-guide-machine.jpg",
+    "/siemens-ct.webp",
+    "/ct-scan.gif",
+    "/noncontrast-ct.gif",
+    "/ct-monitoring-scene-korean.webp",
+    "/ct-monitoring-scene-pediatric.webp",
+    "/plain-shirt.webp",
+    "/plain-pants.webp",
+  ]) {
+    const response = await worker.fetch(path);
+    assert.equal(response.status, 200, path);
+    assert.match(response.headers.get("content-type") ?? "", /^image\//, path);
+    assert.ok((await response.arrayBuffer()).byteLength > 0, path);
+  }
+});
 
-  assert.match(page, /export const metadata:\s*Metadata/);
-  assert.match(page, /"codex-preview": "development"/);
-  assert.match(page, /<SkeletonPreview \/>/);
-  assert.match(layout, /title:\s*"Starter Project"/);
-  assert.doesNotMatch(layout, /codex-preview|_sites-preview|themeColor|\bViewport\b/);
-  assert.doesNotMatch(css, /(^|\s)(html|body)\s*\{/m);
-
-  await assert.rejects(
-    access(new URL("public/_sites-preview", templateRoot)),
-  );
+test("does not expose project configuration or source files", async () => {
+  for (const path of ["/.env", "/package.json", "/app/page.tsx", "/not-an-exam-guide"]) {
+    const response = await worker.fetch(path);
+    assert.equal(response.status, 404, path);
+    await response.text();
+  }
 });

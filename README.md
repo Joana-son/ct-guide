@@ -48,13 +48,14 @@
 
 ### 요구사항
 
-- Node.js `22.13.0` 이상
+- Node.js `24.22.1` 권장 (`.node-version`, `.nvmrc`에 지정)
+- 지원하는 보안 수정 버전: 22.23.4 이상인 22.x, 24.22.1 이상인 24.x, 26.12.1 이상인 26.x
 - npm
 
 ### 설치 및 실행
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -66,6 +67,18 @@ npm run dev
 npm run build
 npm run lint
 ```
+
+### 보안 업데이트 (2026-10-25)
+
+- 2026-10-21 Node.js 보안 공지를 반영하여 개발·빌드용 Node.js 기준을 올렸습니다. 이전 보안 취약 버전에서는 의존성 설치를 중단하도록 설정했습니다.
+- React와 서버 컴포넌트 패키지, Vinext, Vite, Cloudflare 빌드 도구를 보안 수정 버전으로 갱신했습니다. 재현 가능한 설치를 위해 `package-lock.json`도 함께 관리합니다.
+- Cloudflare 빌드 환경에서 `NODE_VERSION`을 별도로 지정했다면 `24.22.1`로 맞춰야 합니다. `.node-version`보다 우선하는 별도 설정은 파일 수정만으로 바뀌지 않습니다.
+- 운영 CT 가이드는 Cloudflare Workers 런타임에서 실행됩니다. 로컬 PC의 Node.js 버전과 운영 런타임은 별개이며, Cloudflare 런타임의 보안 수정은 Cloudflare가 관리합니다.
+- `small-bowel-ct/index.html`은 정적 HTML·이미지 카드뉴스로, Node.js 서버나 서버 컴포넌트를 실행하지 않습니다.
+
+업데이트 시 `npm audit`, `npm run build`, `npm test`를 실행하고 조영·비조영·소아 안내를 확인합니다. Node.js 설치 자체는 `.node-version` 수정으로 교체되지 않으므로 로컬 실행에도 지정 버전을 사용해야 합니다.
+
+공식 공지: [Node.js 2026-10-21 보안 업데이트](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)
 
 ## 프로젝트 구조
 
